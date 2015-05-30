@@ -1,6 +1,11 @@
+##add random forest
+##add statistical filtering
+##add make seperate script on feature selection
+##separate script on rgression
+
 rm(list=ls())
 load("DATA/indam.RData")
-load("DATA//andyshi.RData")
+load("DATA/andyshi.RData")
 #creating data for hits
 top<-as.data.frame(cbind(FeatureIdx=topanfeat,Class=rep("top")))
 bot<-as.data.frame(cbind(FeatureIdx=botanfeat,Class=rep("bottom")))
@@ -24,29 +29,34 @@ library(partykit)
 set.seed(28072013)
 ##selecting samples for training and testing
 class_data<-ipshitsmodel[,1]
-inTrain <- createDataPartition(class_data, p = 3/4, list = FALSE)
+inTrain <- createDataPartition(class_data, p =3/4, list = FALSE)
 forTraining <- ipshitsmodel[inTrain,]
+#forTraining <- ipshitsmodel
 forTrainingX <- forTraining[, names(forTraining) != "Class"]
 #reate testing set for features selection
 forTesting <- ipshitsmodel[-inTrain,]
+#forTesting <- ipshitsmodel
 #############rpart analysis##########
 rpart_training <- rpart(Class~.,  method="class", data=forTraining)
+plot(rpart_training)
+text(rpart_training)
 ##polt as party object
 rpart1a <- as.party(rpart_training)
 plot(rpart1a, main="Classyfication tree for OCT4 positive colonies")
 rpartPred <- predict(rpart_training, forTesting, type = "class")
 confusionMatrix(rpartPred, forTesting$Class)
 ##tunning the model
-cvCtrl <- trainControl(method = "repeatedcv", repeats = 3,
+cvCtrl <- trainControl(method = "repeatedcv", repeats = 10,
                        summaryFunction = twoClassSummary,
-                       classProbs = TRUE)
+                       classProbs = TRUE,savePred=T)
+#rpart
 rpartTune <- train(Class ~ ., data = forTraining, method = "rpart",
                    tuneLength = 30,
                    metric = "ROC",
                    trControl = cvCtrl)
 plot(rpartTune)
 predictors(rpartTune)
-plot(varImp(rpartTune),top = 20)
+plot(varImp(rpartTune),top = 30)
 plot.train(rpartTune)
 #print.train(rpartTune)
 plot(rpartTune, scales = list(x = list(log = 10)))
@@ -71,6 +81,8 @@ c5Tune <- train(forTrainingX, forTraining$Class,
                 tuneGrid = grid,
                 trControl = cvCtrl)
 c5Tune
+predictors(c5Tune)
+plot(varImp(c5Tune),top = 30)
 plot(c5Tune)
 c5Pred <- predict(c5Tune, forTesting)
 confusionMatrix(c5Pred, forTesting$Class)
@@ -90,7 +102,7 @@ svmTune <- train(x = forTrainingX,
                  y = forTraining$Class,
                  method = "svmRadial",
                  tuneLength = 20,
-                 preProc = c("center", "scale"),
+                 #preProc = c("center", "scale"),
                  metric = "ROC",
                  trControl = cvCtrl)
 svmTune
@@ -113,7 +125,39 @@ svmROC
 plot(rpartROC, type = "S")
 plot(c5ROC, add = TRUE, col = "red")
 plot(svmROC, add = TRUE, col = "blue")
-#comparing models with resampling
+##random forst
+library(randomForest)
+RFTune <- train(x = forTrainingX,
+                 y = forTraining$Class,
+                 method = "rf",
+                 #preProc = c("center", "scale"),
+                 metric = "ROC",
+                 trControl = cvCtrl)
+RFTune
+
+predictors(RFTune)
+plot(varImp(RFTune),top = 30)
+RFTune$finalModel
+plot(RFTune, metric = "ROC", scales = list(x = list(log =2)))
+RFPred <- predict(RFTune, forTesting[, names(forTesting) != "Class"])
+confusionMatrix(RFPred, forTesting$Class)
+
+RFProbs <- predict(RFTune, forTesting[, names(forTesting) != "Class"],
+                    type = "prob")
+head(RFProbs)
+RFROC <- roc(predictor = RFProbs$top,
+              response = forTesting$Class,
+              levels = rev(levels(forTesting$Class)))
+RFROC
+
+plot(rpartROC, type = "S")
+plot(c5ROC, add = TRUE, col = "red")
+plot(svmROC, add = TRUE, col = "blue")
+plot(RFROC, add = TRUE, col = "green")
+
+
+#comparing models with resampling 
+######add ranom forest here
 cvValues <- resamples(list(CART = rpartTune, SVM = svmTune, C5.0 = c5Tune))
 summary(cvValues)
 splom(cvValues, metric = "ROC")
