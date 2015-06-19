@@ -135,9 +135,8 @@ ggplot(ipshitsmodel,aes(PatArea,WN1,
 
 ggplot(ipshitsmodel,aes(PatArea,WN0.2,
                         colour=as.factor(Class)))+geom_point()+theme_bw()+
-  scale_color_discrete(name ="Surface Class for \n OCT4 expression", 
-                       labels=c("Positive","Negative"))+
-  scale_color_manual(values = c("blue","red"))+ 
+    scale_color_manual(values = c("blue","red"),name ="Surface Class for \n OCT4 expression", 
+                     labels=c("Positive","Negative"))+ 
   theme(legend.position = c(.8, .8),
         text = element_text(size=18))+
   xlab(expression(paste("Pattern Area, (",μm^{2},")",sep="")))+
