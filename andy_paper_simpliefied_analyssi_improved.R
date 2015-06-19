@@ -133,6 +133,18 @@ ggplot(ipshitsmodel,aes(PatArea,WN1,
   ylab("Wave Number WN1 (a.u.)")+
   scale_x_continuous(breaks=number_ticks(20))
 
+ggplot(ipshitsmodel,aes(PatArea,WN0.2,
+                        colour=as.factor(Class)))+geom_point()+theme_bw()+
+  scale_color_discrete(name ="Surface Class for \n OCT4 expression", 
+                       labels=c("Positive","Negative"))+
+  scale_color_manual(values = c("blue","red"))+ 
+  theme(legend.position = c(.8, .8),
+        text = element_text(size=18))+
+  xlab(expression(paste("Pattern Area, (",μm^{2},")",sep="")))+
+  ylab("Wave Number WN0.2 (a.u.)")+
+  scale_x_continuous(breaks=number_ticks(20))
+
+
 # ______________________________________________________________________________________ 
 ##tunning the model
 cvCtrl <- trainControl(method = "repeatedcv", repeats = 10,
